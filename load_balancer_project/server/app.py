@@ -8,13 +8,13 @@ import requests
 app = Flask(__name__)
 ring = ConsistentHashRing()
 replicas = set()
-N = 3  # Initial number of replicas
+N = 3
 
 def init_replicas(n=N):
+    # Register existing containers created by docker-compose
     for i in range(1, n + 1):
-        name = f"server{i}"
-        server_id = i
-        ring.add_server(server_id, name)
+        name = f"server{i}"  # Use lowercase to match docker-compose service names
+        ring.add_server(i)
         replicas.add(name)
 
 @app.route('/rep', methods=['GET'])
@@ -42,8 +42,7 @@ def add_replicas():
     for i in range(n):
         name = names[i] if i < len(names) else dm.generate_random_name()
         if dm.spawn_container(name):
-            server_id = 100 + i  # Ensure unique server IDs
-            ring.add_server(server_id, name)
+            ring.add_server(i + 100)
             replicas.add(name)
 
     return jsonify({
@@ -74,7 +73,6 @@ def remove_replicas():
     for name in removable:
         dm.remove_container(name)
         replicas.discard(name)
-        # Optional: remove server from hash ring if you track reverse map
 
     return jsonify({
         "message": {
@@ -89,22 +87,23 @@ def route_request(req_path):
     if not replicas:
         return jsonify({"message": "No servers available", "status": "failure"}), 500
 
-    # Derive numeric ID from path for consistent hashing
     req_id = int(''.join(filter(str.isdigit, req_path)) or '100001')
-    target = ring.get_server(req_id)
+    sid = ring.get_server(req_id)
 
-    if not target or target not in replicas:
+    target = None
+    for name in replicas:
+        if str(sid) in name:
+            target = name
+            break
+
+    if not target:
         return jsonify({"message": "<Error> Could not find target", "status": "failure"}), 400
 
     try:
         resp = requests.get(f"http://{target}:5000/{req_path}")
         return jsonify(resp.json()), resp.status_code
-    except Exception as e:
-        return jsonify({
-            "message": f"<Error> '{req_path}' endpoint does not exist in server replicas or failed to connect",
-            "status": "failure",
-            "detail": str(e)
-        }), 400
+    except Exception:
+        return jsonify({"message": f"<Error> '{req_path}' endpoint does not exist in server replicas", "status": "failure"}), 400
 
 if __name__ == '__main__':
     init_replicas()
