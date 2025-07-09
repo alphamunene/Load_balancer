@@ -8,12 +8,13 @@ import requests
 app = Flask(__name__)
 ring = ConsistentHashRing()
 replicas = set()
-N = 3
+N = 3  # Initial number of replicas
 
 def init_replicas(n=N):
     for i in range(1, n + 1):
         name = f"server{i}"
-        ring.add_server(i)
+        server_id = i
+        ring.add_server(server_id, name)
         replicas.add(name)
 
 @app.route('/rep', methods=['GET'])
@@ -41,7 +42,8 @@ def add_replicas():
     for i in range(n):
         name = names[i] if i < len(names) else dm.generate_random_name()
         if dm.spawn_container(name):
-            ring.add_server(i + 100)
+            server_id = 100 + i  # Ensure unique server IDs
+            ring.add_server(server_id, name)
             replicas.add(name)
 
     return jsonify({
@@ -72,6 +74,7 @@ def remove_replicas():
     for name in removable:
         dm.remove_container(name)
         replicas.discard(name)
+        # Optional: remove server from hash ring if you track reverse map
 
     return jsonify({
         "message": {
@@ -81,29 +84,27 @@ def remove_replicas():
         "status": "successful"
     }), 200
 
-@app.route('/home', methods=['GET'])
-def route_home():
+@app.route('/<path:req_path>', methods=['GET'])
+def route_request(req_path):
     if not replicas:
         return jsonify({"message": "No servers available", "status": "failure"}), 500
 
-    req_id = request.args.get('id', default='100001')
-    sid = ring.get_server(req_id)
+    # Derive numeric ID from path for consistent hashing
+    req_id = int(''.join(filter(str.isdigit, req_path)) or '100001')
+    target = ring.get_server(req_id)
 
-    # Find server containing the sid
-    target = None
-    for name in replicas:
-        if str(sid) in name:
-            target = name
-            break
-
-    if not target:
+    if not target or target not in replicas:
         return jsonify({"message": "<Error> Could not find target", "status": "failure"}), 400
 
     try:
-        resp = requests.get(f"http://{target}:5000/home")
+        resp = requests.get(f"http://{target}:5000/{req_path}")
         return jsonify(resp.json()), resp.status_code
-    except Exception:
-        return jsonify({"message": "<Error> Failed to connect to target server", "status": "failure"}), 400
+    except Exception as e:
+        return jsonify({
+            "message": f"<Error> '{req_path}' endpoint does not exist in server replicas or failed to connect",
+            "status": "failure",
+            "detail": str(e)
+        }), 400
 
 if __name__ == '__main__':
     init_replicas()
