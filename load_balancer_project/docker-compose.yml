@@ -1,4 +1,5 @@
 version: "3.9"
+
 services:
   loadbalancer:
     build: ./load_balancer
@@ -21,6 +22,7 @@ services:
 
   server1:
     build: ./server
+    image: server_image
     container_name: server1
     networks:
       net1:
@@ -31,6 +33,7 @@ services:
 
   server2:
     build: ./server
+    image: server_image
     container_name: server2
     networks:
       net1:
@@ -41,6 +44,7 @@ services:
 
   server3:
     build: ./server
+    image: server_image
     container_name: server3
     networks:
       net1:
