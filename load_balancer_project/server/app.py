@@ -2,6 +2,8 @@ from flask import Flask, jsonify
 import os
 
 app = Flask(__name__)
+
+# Retrieve the server's ID from environment variable
 SERVER_ID = os.environ.get("SERVER_ID", "Unknown")
 
 @app.route('/home', methods=['GET'])
