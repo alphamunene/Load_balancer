@@ -14,20 +14,16 @@ services:
           - loadbalancer
     environment:
       - PYTHONUNBUFFERED=1
-    depends_on:
-      - server1
-      - server2
-      - server3
 
-  server1:
+  server11:
     build: ./server
-    container_name: server1
+    container_name: server11
     networks:
       net1:
         aliases:
-          - server1
+          - server11
     environment:
-      - SERVER_ID=1
+      - SERVER_ID=11
 
   server2:
     build: ./server
