@@ -11,11 +11,11 @@ replicas = set()
 N = 3
 
 def init_replicas(n=N):
+    # Register existing containers created by docker-compose
     for i in range(1, n + 1):
-        name = f"Server{i}"
-        if dm.spawn_container(name):
-            ring.add_server(i)
-            replicas.add(name)
+        name = f"server{i}"  # Use lowercase to match docker-compose service names
+        ring.add_server(i)
+        replicas.add(name)
 
 @app.route('/rep', methods=['GET'])
 def get_replicas():
