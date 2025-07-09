@@ -1,55 +1,41 @@
 import os
 import random
 import string
-import subprocess
+import time
 
-# Base image name for the server containers
-IMAGE_NAME = "server_image"
-DOCKER_NETWORK = "net1"
+# Function to generate a random server name
+def generate_random_name(length=6):
+    return "S" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
-def generate_random_name():
-    """Generates a random hostname like S8421"""
-    return "S" + ''.join(random.choices(string.digits, k=4))
-
+# Function to spawn a new server container
 def spawn_container(name):
-    """
-    Spawns a new container with given name, attached to the Docker network.
-    Returns True if container was started successfully, False otherwise.
-    """
     print(f"[INFO] Spawning container: {name}")
     cmd = (
-        f"docker run -d --name {name} "
-        f"--network {DOCKER_NETWORK} "
-        f"--network-alias {name} "
-        f"-e SERVER_ID={name} "
-        f"{IMAGE_NAME}"
+        f"docker run --name {name} "
+        f"--network net1 --network-alias {name} "
+        f"-e SERVER_ID={name[-1]} -d server_image"
     )
+    print("[DEBUG] Command:", cmd)
     result = os.popen(cmd).read().strip()
-    if result:
-        print(f"[SUCCESS] Container {name} started with ID {result}")
-        return True
-    else:
-        print(f"[ERROR] Failed to start container {name}")
+    print("[DEBUG] Result:", result)
+
+    if result == "":
+        print(f"[ERROR] Failed to start container: {name}")
         return False
 
+    time.sleep(1)  # give the container a moment to start
+    return True
+
+# Function to remove a server container
 def remove_container(name):
-    """
-    Stops and removes a container by name.
-    Returns True if successful, False otherwise.
-    """
     print(f"[INFO] Removing container: {name}")
-    try:
-        os.system(f"docker stop {name} > /dev/null 2>&1")
-        os.system(f"docker rm {name} > /dev/null 2>&1")
-        print(f"[SUCCESS] Container {name} removed")
-        return True
-    except Exception as e:
-        print(f"[ERROR] Failed to remove container {name}: {str(e)}")
-        return False
+    stop_cmd = f"docker stop {name}"
+    rm_cmd = f"docker rm {name}"
 
-def list_running_servers():
-    """
-    Returns a list of running server container names.
-    """
-    result = subprocess.getoutput("docker ps --format '{{.Names}}'")
-    return [name for name in result.splitlines() if name.startswith("server") or name.startswith("S")]
+    print("[DEBUG] Stop command:", stop_cmd)
+    print("[DEBUG] Remove command:", rm_cmd)
+
+    os.system(stop_cmd)
+    os.system(rm_cmd)
+    time.sleep(1)
+
