@@ -1,6 +1,64 @@
 #  Load Balancer
 
+
+
+
+## 🔧 Software Requirements
+
+- 🐧 **Ubuntu** 20.04 LTS or above (tested on Ubuntu 22.04)
+- 🐳 **Docker** ≥ 20.10.23
+- 🧱 **Docker Compose** ≥ v2.15.1
+- 🐍 **Python** ≥ 3.8
+- 📦 Python Packages (for analysis):
+  - `aiohttp`
+  - `matplotlib`
+
+Install required Python packages:
+```bash
+pip install aiohttp matplotlib
+````
+
 ---
+
+## 🧬 Cloning the Repository
+
+To get started:
+
+```bash
+git clone https://github.com/alphamunene/load-balancer-consistent-hashing.git
+cd load-balancer-consistent-hashing
+```
+
+
+---
+
+## 🛠️ Setup & Deployment
+
+### 🧱 1. Install Docker & Compose
+
+```bash
+sudo apt update
+sudo apt install docker.io docker-compose -y
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### ⚙️ 2. Build & Start the System
+
+```bash
+make build
+make up
+```
+
+### 🔄 3. Restart / Shutdown
+
+```bash
+make restart
+make down
+```
+
+---
+
 
 ````markdown
 # 🧠 Distributed Load Balancer with Consistent Hashing
