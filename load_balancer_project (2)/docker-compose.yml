@@ -1,4 +1,5 @@
 version: '3.9'
+
 services:
   balancer:
     build: ./load_balancer
@@ -13,5 +14,21 @@ services:
       net1:
         aliases:
           - balancer
+
+  server-template:
+    build: ./server
+    image: server-image
+    environment:
+      - SERVER_ID=template
+    networks:
+      net1:
+        aliases:
+          - server-template
+    deploy:
+      replicas: 0  # Prevents it from auto-starting
+    entrypoint: ["sleep", "infinity"]  # Template container doesn't run Flask
+    profiles:
+      - do-not-start
+
 networks:
   net1:
